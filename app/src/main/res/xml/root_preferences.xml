@@ -1,0 +1,33 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <PreferenceCategory app:title="@string/search_history" >
+
+        <SwitchPreferenceCompat
+            app:key="@string/key_history"
+            android:defaultValue="true"
+            app:summaryOff="@string/history_off"
+            app:summaryOn="@string/history_on"
+            app:title="@string/save_history" />
+
+        <Preference
+            android:title="@string/clear_history"
+            android:key="@string/key_clear_history"
+            android:summary="@string/warn_clear_history"/>
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/theme">
+
+        <ListPreference
+            android:defaultValue="-1"
+            android:entries="@array/themes"
+            android:entryValues="@array/themes_values"
+            app:key="@string/key_theme"
+            android:summary="%s"
+            android:title="@string/theme" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

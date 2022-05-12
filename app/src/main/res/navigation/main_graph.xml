@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    app:startDestination="@id/tabsFragment"
+    android:id="@+id/main_graph">
+
+    <fragment
+        android:id="@+id/tabsFragment"
+        android:name="com.example.domainsearch.fragments.tabs.TabsFragment"
+        android:label="fragment_tabs"
+        tools:layout="@layout/fragment_tabs" >
+
+    </fragment>
+
+</navigation>

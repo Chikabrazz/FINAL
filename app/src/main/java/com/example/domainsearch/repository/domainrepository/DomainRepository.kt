@@ -1,0 +1,93 @@
+package com.example.domainsearch.repository.domainrepository
+
+import com.example.domainsearch.base.BaseRepository
+import com.example.domainsearch.database.Domain
+import com.example.domainsearch.extensions.notNull
+import com.example.domainsearch.network.DomainsApi
+import com.example.domainsearch.network.DomainsApiQueryResult
+import com.example.domainsearch.util.UiActions
+import com.example.domainsearch.util.addOnCompleteListener
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import retrofit2.Response
+import timber.log.Timber
+import javax.inject.Inject
+
+private const val EMPTY = "-"
+private const val ERROR = "e"
+
+class DomainRepository @Inject constructor(
+    uiActions: UiActions,
+    private val callback: (DomainSearchResult) -> Unit,
+) : BaseRepository(uiActions) {
+
+    /**
+     * First tries to get description of [domain] from database.
+     * If description is not in database tries to download it
+     */
+    suspend fun getDescription(domain: String) {
+        val descriptionFromDatabase = searchDao.getDomainDescription(domain)
+
+        if (descriptionFromDatabase !in listOf(null, ERROR)) {
+            callback(
+                Success(
+                    domain = domain,
+                    description = descriptionFromDatabase,
+                    status = if (descriptionFromDatabase != EMPTY) Status.FOUND else Status.NOT_FOUND,
+                )
+            )
+            return
+        }
+        download(domain)
+    }
+
+    /**
+     * Gets description via retrofit
+     */
+    private fun download(domain: String) {
+        DomainsApi.retrofitService.downloadDescription(domain).addOnCompleteListener { result ->
+
+            if (result.isSuccessful) {
+                onSuccess(domain, result.response!!)
+            } else {
+                onFailure(domain, result.t)
+            }
+        }
+    }
+
+    private fun onSuccess(domain: String, response: Response<DomainsApiQueryResult>) {
+        CoroutineScope(Dispatchers.IO).launch {
+
+            val description = response.body()?.result ?: EMPTY
+
+            with (searchDao) {
+                val id = findIdByDomain(domain) ?: 0
+                insertDomain(Domain(id, domain, description))
+            }
+
+            val status =
+                when (description) {
+                    EMPTY -> Status.NOT_FOUND
+                    else -> Status.FOUND
+                }
+
+            callback(
+                Success(domain, description, status)
+            )
+        }
+    }
+
+    private fun onFailure(domain: String, t: Throwable?) {
+        Timber.e(t)
+
+        CoroutineScope(Dispatchers.IO).launch {
+            searchDao.insertDomain(Domain(0, domain, ERROR))
+
+            val errorMessage = t?.message.notNull()
+            callback(
+                Failure(domain, isConnectionError(errorMessage), errorMessage)
+            )
+        }
+    }
+}
